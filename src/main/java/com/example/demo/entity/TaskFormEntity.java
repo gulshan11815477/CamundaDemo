@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.hibernate.annotations.Type;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 
 import jakarta.persistence.Column;

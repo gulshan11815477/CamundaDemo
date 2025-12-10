@@ -13,5 +13,4 @@ public class TaskItem {
     private String processInstanceId;
     private Instant creationTime;
 
-    // getters + setters
 }

@@ -1,13 +1,10 @@
 package com.example.demo.worker;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -15,8 +12,12 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskFormEntity;
+import com.example.demo.model.CamundaFormDto;
 import com.example.demo.repository.TaskFormRepo;
 import com.example.demo.repository.TaskRepo;
+import com.example.demo.service.TasklistApiClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -28,6 +29,9 @@ public class UserTaskWorker {
 	@Autowired
 	RestTemplate restTemplate;
 
+	@Autowired
+	TasklistApiClient tasklistApiClient;
+
 	private final TaskRepo taskRepo;
 	private final TaskFormRepo taskFormRepo;
 
@@ -36,12 +40,16 @@ public class UserTaskWorker {
 		this.taskFormRepo = taskFormRepo;
 	}
 
+	private static final ObjectMapper mapper = new ObjectMapper();
+
 	@Transactional
 	public TaskEntity createTaskFromJob(ActivatedJob job, String name, String assignee, String candidateGroup,
 			Long taskFormUuid, Long taskVariableUuid) {
 		TaskEntity task = new TaskEntity();
 
 		task.setJobKey(job.getKey());
+		task.setUserTaskId(job.getCustomHeaders().get("io.camunda.zeebe:userTaskKey"));
+		task.setProcessDefinationKey(job.getProcessDefinitionKey());
 		task.setProcessInstance(job.getProcessInstanceKey());
 		task.setBpmnElementId(job.getElementId());
 		task.setName(name != null ? name : job.getElementId()); // fallback
@@ -62,9 +70,10 @@ public class UserTaskWorker {
 		Map<String, String> customHeadersMap = job.getCustomHeaders();
 		TaskFormEntity taskFormEntity = new TaskFormEntity();
 
-		if (!ObjectUtils.isEmpty(customHeadersMap.get("io.camunda.zeebe:formKey"))) {
+		if (!ObjectUtils.isEmpty(job.getCustomHeaders().get("io.camunda.zeebe:formKey"))) {
 
-			taskFormEntity = saveTaskForm(job, customHeadersMap.get("io.camunda.zeebe:formKey"));
+			taskFormEntity = saveTaskForm(job.getProcessDefinitionKey(),
+					customHeadersMap.get("io.camunda.zeebe:formKey"));
 
 		}
 
@@ -77,38 +86,58 @@ public class UserTaskWorker {
 		client.newCompleteCommand(job.getKey()).send().join();
 	}
 
-	private TaskFormEntity saveTaskForm(ActivatedJob job, String formKey) {
+	public TaskFormEntity saveTaskForm(long processDefinitionkey, String formKey) {
 
 		TaskFormEntity taskFormEntity = new TaskFormEntity();
 
 		taskFormEntity.setFormKey(formKey);
-		// for now only empty map ---// method which will check first db then call api
-		taskFormEntity.setSchema(new ConcurrentHashMap<>());
-		
-		
-		
-		taskFormEntity.setVersion(null);
+		CamundaFormDto camundaFormDto = tasklistApiClient.getForm(formKey, processDefinitionkey);
+		taskFormEntity.setVersion(camundaFormDto.getVersion());
+
+//		taskFormEntity.setSchema(new ConcurrentHashMap<>());
+
+		Map<String, Object> stringMap = null;
+		try {
+			stringMap = mapper.readValue(camundaFormDto.getSchema().toString(), Map.class);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		taskFormEntity.setSchema(Optional.ofNullable(stringMap).orElseGet(HashMap::new));
 
 		return taskFormRepo.save(taskFormEntity);
 
 	}
 
-	public Map<Object, Object> getReviewRequestForm(String bearerToken, String formKey, long processDefinitionKey,
-			int version) {
+//
+//	/**
+//	 * Converts a JsonNode to a Map<String, Object>.
+//	 *
+//	 * @param node the JsonNode to convert
+//	 * @return a Map representation of the JsonNode
+//	 */
+//	public static Map<String, Object> convertJsonNodeToMap(JsonNode node) {
+//		return mapper.convertValue(node, Map.class);
+//	}
 
-		String url = String.format(
-				"https://sin-2.tasklist.camunda.io/9f6ba8a8-cba2-48c8-8fb2-fb81ccfb87de/v1/forms/%s?processDefinitionKey=%d&version=%d",
-				formKey, processDefinitionKey, version);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("accept", "application/json");
-		headers.set("Authorization", "Bearer " + bearerToken);
-
-		HttpEntity<String> entity = new HttpEntity<>(headers);
-
-		ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-
-		return response.getBody();
-	}
-
+	/*
+	 * public Map<Object, Object> getReviewRequestForm(String bearerToken, String
+	 * formKey, long processDefinitionKey, int version) {
+	 * 
+	 * String url = String.format(
+	 * "https://sin-2.tasklist.camunda.io/9f6ba8a8-cba2-48c8-8fb2-fb81ccfb87de/v1/forms/%s?processDefinitionKey=%d&version=%d",
+	 * formKey, processDefinitionKey, version);
+	 * 
+	 * HttpHeaders headers = new HttpHeaders(); headers.set("accept",
+	 * "application/json"); headers.set("Authorization", "Bearer " + bearerToken);
+	 * 
+	 * HttpEntity<String> entity = new HttpEntity<>(headers);
+	 * 
+	 * ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET,
+	 * entity, Map.class);
+	 * 
+	 * return response.getBody(); }
+	 * 
+	 */
 }

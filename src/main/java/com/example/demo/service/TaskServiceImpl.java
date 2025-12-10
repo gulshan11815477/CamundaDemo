@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskFormEntity;
@@ -19,10 +17,6 @@ import com.example.demo.specification.TaskSpecifications;
 
 @Service
 public class TaskServiceImpl implements TaskService {
-
-	@Qualifier("tasklistWebClient")
-	@Autowired
-	private WebClient tasklistWebClient;
 
 	@Autowired
 	TaskRepo taskRepo;
@@ -54,7 +48,6 @@ public class TaskServiceImpl implements TaskService {
 	 * headers.setBearerAuth(CamundaTokenFetcher.fetchAccessTokenString())) //
 	 * .bodyValue(request) .retrieve().bodyToMono(String.class).block();
 	 * 
-	 * System.out.println("Response**************"); System.out.println(response);
 	 * 
 	 * return Collections.EMPTY_LIST; }
 	 * 
@@ -66,7 +59,6 @@ public class TaskServiceImpl implements TaskService {
 	 * 
 	 * .retrieve().bodyToMono(String.class).block();
 	 * 
-	 * System.out.println("response -----" + response); return response;
 	 * 
 	 * }
 	 */

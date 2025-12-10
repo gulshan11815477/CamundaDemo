@@ -20,19 +20,16 @@ public class Schedular {
 	public void syncNewUserTask() {
 
 		// fetch usertask, and save
-		System.out.println("schedular started");
 
 		///
 		TaskSearchRequest req = new TaskSearchRequest();
 		req.setState("CREATED");
 
-		//List<TaskItem> tasks = taskService.getTasks(req);
+		// List<TaskItem> tasks = taskService.getTasks(req);
 //
 //		tasks.forEach(t -> {
 //			System.out.println("Task: " + t.getId() + " - " + t.getName());
 //		});
-
-		System.out.println("User Task saved in DB");
 
 	}
 

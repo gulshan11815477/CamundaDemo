@@ -42,6 +42,20 @@ public class TaskEntity {
 	private Instant createdAt = Instant.now();
 	private Instant completedAt;
 
+	@Column(name = "table_task_form_id")
+	private Long taskFormId;
+
+	@Column(name = "table_task_variable_id")
+	private Long taskVariableid;
+	
+	@Column(name = "user_task_id")
+	private String userTaskId;
+	
+	@Column(name = "process_definiation_key")
+	private Long processDefinationKey;
+	
+	
+
 	/*
 	 * //@ManyToOne(fetch = FetchType.LAZY)
 	 * 
@@ -57,10 +71,5 @@ public class TaskEntity {
 	 * @JoinColumn(name = "task_variable_id", nullable = false) private
 	 * TaskVariableEntity taskVariable;
 	 */
-	@Column(name = "task_form_id")
-	private Long taskFormId;
-
-	@Column(name = "task_variable_id")
-	private Long taskVariableid;
 
 }
