@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,38 +29,25 @@ public class TasklistApiController {
 		return tasklistApiClient.getTask(taskId);
 	}
 
-
 	// 3. Get form schema by formId
 	@GetMapping("/forms/{formId}")
-	public CamundaFormDto getForm(@PathVariable String formId,@RequestParam Long processDefinitionKey) {
+	public CamundaFormDto getForm(@PathVariable String formId, @RequestParam Long processDefinitionKey) {
 		return tasklistApiClient.getForm(formId, processDefinitionKey);
 	}
-	
-	
+
 	// 4. Assign task
 
-	@PostMapping("/tasks/{taskId}/assign")
-	public void assignTask(@PathVariable String taskId, @RequestBody String userId) {
-		tasklistApiClient.assignTask(taskId, userId);
-		
-	} 
+	@PostMapping("/v2/user-tasks/{taskId}/assignment")
+	public void assignTask(@PathVariable String taskId, @RequestBody Map<String, Object> assignMap) {
+		tasklistApiClient.assignTask(taskId, assignMap);
 
-	// 5. Unassign task
-	@DeleteMapping("/tasks/{taskId}/assign")
-	public void unassignTask(@PathVariable String taskId) {
-		tasklistApiClient.unassignTask(taskId);
 	}
 
-	/*
-	 * // 6. Complete task
-	 * 
-	 * @PostMapping("/tasks/{taskId}/complete") public void
-	 * completeTask(@PathVariable String taskId, @RequestBody CompleteTaskRequest
-	 * request) { tasklistApiClient.completeTask(taskId, request.getVariables()); }
-	 */
-
-
-	
+	// 6. Complete task
+	@PostMapping("/v2/user-tasks/{taskId}/completion")
+	public void completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> variables) {
+		tasklistApiClient.completeTask(taskId, variables);
+	}
 
 	// 2. Search tasks
 	/*
@@ -67,5 +55,11 @@ public class TasklistApiController {
 	 * searchTasks(@RequestBody TaskSearchRequest request) { return
 	 * tasklistApiClient.searchTasks(request.getQueryBody()); }
 	 */
-	
+
+	// 5. Unassign task
+//		@DeleteMapping("/tasks/{taskId}/assign")
+//		public void unassignTask(@PathVariable String taskId) {
+//			tasklistApiClient.unassignTask(taskId);
+//		}
+
 }

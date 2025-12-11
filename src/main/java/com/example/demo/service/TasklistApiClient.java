@@ -2,6 +2,8 @@ package com.example.demo.service;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,7 +21,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TasklistApiClient {
 
+	@Autowired
+	@Qualifier("tasklistV1")
 	private final WebClient camundaClient;
+	@Autowired
+	@Qualifier("tasklistV2")
+	private final WebClient camundaClientV2;
 	private final CamundaAuthService authService;
 
 	private String bearer() {
@@ -66,9 +73,9 @@ public class TasklistApiClient {
 	}
 
 	// 4. Assign task
-	public void assignTask(String taskId, String userId) {
-		camundaClient.patch() .uri("/tasks/{id}/assignee", taskId).header(HttpHeaders.AUTHORIZATION, bearer())
-				.bodyValue(Map.of("assignee", userId)).retrieve().toBodilessEntity().block();
+	public void assignTask(String taskId, Map<String, Object> assignMap) {
+		camundaClientV2.post().uri("/{id}/assignment", taskId).header(HttpHeaders.AUTHORIZATION, bearer())
+				.bodyValue(Map.of("assignee", assignMap.get("assignee"))).retrieve().toBodilessEntity().block();
 	}
 
 	// 5. Unassign task
@@ -79,7 +86,7 @@ public class TasklistApiClient {
 
 	// 6. Complete task
 	public void completeTask(String taskId, Map<String, Object> variables) {
-		camundaClient.post().uri("/tasks/{id}/complete", taskId).header(HttpHeaders.AUTHORIZATION, bearer())
+		camundaClientV2.post().uri("/{id}/completion", taskId).header(HttpHeaders.AUTHORIZATION, bearer())
 				.bodyValue(Map.of("variables", variables)).retrieve().toBodilessEntity().block();
 	}
 }
