@@ -18,7 +18,7 @@ public class WebClientConfig {
 	@Bean
 	@Primary
 	@Qualifier("tasklistV1")
-	public WebClient camundaTasklistClient(@Value("${camunda.tasklist.base-url}") String baseUrl) {
+	public WebClient camundaTasklistWebClient(@Value("${camunda.tasklist.base-url}") String baseUrl) {
 		return WebClient.builder().baseUrl(baseUrl).defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
 				.filter(logRequest()).filter(logResponse()).build();
 	}

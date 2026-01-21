@@ -13,7 +13,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "t_tasks", schema = "bloom")
+@Table(name = "demo_t_tasks", schema = "bloom")
 public class TaskEntity {
 
 	@Id

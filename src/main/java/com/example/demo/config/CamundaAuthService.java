@@ -62,8 +62,8 @@ public class CamundaAuthService {
 
 		String token = response.getAccessToken();
 
-		// Token is valid for 15 min → set expiry 1 min earlier for safety
-		Instant expiry = Instant.now().plus(Duration.ofMinutes(14));
+		// Token is valid for 1440 min → set expiry 1 min earlier for safety
+		Instant expiry = Instant.now().plus(Duration.ofMinutes(1439));
 
 		cache.put(aud, new CachedToken(token, expiry));
 

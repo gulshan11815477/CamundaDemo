@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "t_task_variables", schema = "bloom")
+@Table(name = "demo_t_task_variables", schema = "bloom")
 public class TaskVariableEntity {
 	@Id
 	@GeneratedValue

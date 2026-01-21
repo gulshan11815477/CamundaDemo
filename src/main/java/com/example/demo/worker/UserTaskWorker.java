@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.demo.entity.TaskEntity;
@@ -63,51 +63,53 @@ public class UserTaskWorker {
 	}
 
 	@JobWorker(type = "initial-project-review-created")
-	public void onInitialProjectReviewCreated(final ActivatedJob job, final JobClient client) {
+	public void onInitialProjectReviewCreated(final ActivatedJob job, final JobClient client) { // Extract headers once
+		Map<String, String> headers = job.getCustomHeaders();
+		String formKey = headers.get("io.camunda.zeebe:formKey");
 
-		// User-task specific data (Camunda 8 user task listeners)
+		TaskFormEntity taskFormEntity = null;
 
-		Map<String, String> customHeadersMap = job.getCustomHeaders();
-		TaskFormEntity taskFormEntity = new TaskFormEntity();
-
-		if (!ObjectUtils.isEmpty(job.getCustomHeaders().get("io.camunda.zeebe:formKey"))) {
-
-			taskFormEntity = saveTaskForm(job.getProcessDefinitionKey(),
-					customHeadersMap.get("io.camunda.zeebe:formKey"));
-
+		// Only fetch/save form if formKey is present
+		if (StringUtils.hasText(formKey)) {
+			taskFormEntity = saveTaskForm(job.getProcessDefinitionKey(), formKey);
 		}
 
+		/// check and modify this
 		TaskEntity taskEntity = createTaskFromJob(job, "initial-project-review-created", null, null,
-				taskFormEntity.getId(), null);
+				taskFormEntity != null ? taskFormEntity.getId() : null, null);
 
-		System.out.println("***********Done******");
+		// log.info("Initial project review task created: {}", taskEntity.getId());
+		
+		System.out.println("Worker called and completed");
 
-		// complete the listener job so the task can actually be created
+		// Complete the listener job so the task can actually be created
 		client.newCompleteCommand(job.getKey()).send().join();
 	}
 
 	public TaskFormEntity saveTaskForm(long processDefinitionkey, String formKey) {
-
-		TaskFormEntity taskFormEntity = new TaskFormEntity();
-
-		taskFormEntity.setFormKey(formKey);
 		CamundaFormDto camundaFormDto = tasklistApiClient.getForm(formKey, processDefinitionkey);
-		taskFormEntity.setVersion(camundaFormDto.getVersion());
 
-//		taskFormEntity.setSchema(new ConcurrentHashMap<>());
+		// First check if entity already exists
+		Optional<TaskFormEntity> existing = taskFormRepo.findByFormKeyAndVersion(formKey, camundaFormDto.getVersion());
+		if (existing.isPresent()) {
+			return existing.get();
+		}
+
+		// Otherwise create new
+		TaskFormEntity taskFormEntity = new TaskFormEntity();
+		taskFormEntity.setFormKey(formKey);
+		taskFormEntity.setVersion(camundaFormDto.getVersion());
 
 		Map<String, Object> stringMap = null;
 		try {
 			stringMap = mapper.readValue(camundaFormDto.getSchema().toString(), Map.class);
 		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		taskFormEntity.setSchema(Optional.ofNullable(stringMap).orElseGet(HashMap::new));
 
 		return taskFormRepo.save(taskFormEntity);
-
 	}
 
 //
